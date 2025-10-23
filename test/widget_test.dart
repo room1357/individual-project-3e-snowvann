@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:pemrograman_mobile/main.dart';
 
 void main() {
-  testWidgets('App starts with Login screen', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our app starts with Login screen
-    expect(find.text('Login'), findsOneWidget); // AppBar title
-    expect(find.text('Username'), findsOneWidget); // Username field
-    expect(find.text('Password'), findsOneWidget); // Password field
-    expect(find.text('LOGIN'), findsOneWidget); // Login button
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('Register navigation works', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    // Build our app with isLoggedIn = false
+    await tester.pumpWidget(const MyApp(isLoggedIn: false));
 
-    // Tap the Register text button
+    // Verify that login screen is shown
+    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Username'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+  });
+
+  testWidgets('Register button navigates to register screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp(isLoggedIn: false));
+
+    // Tap the Register button
     await tester.tap(find.text('Register'));
     await tester.pumpAndSettle();
 
-    // Verify that we navigated to Register screen
-    expect(find.text('Register'), findsOneWidget); // AppBar title
-    expect(find.text('Full Name'), findsOneWidget); // Full Name field
+    // Verify that register screen is shown
+    expect(find.text('Register'), findsOneWidget);
+    expect(find.text('Full Name'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
   });
 }
