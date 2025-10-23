@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pemrograman_mobile/screens/home_screen.dart';
+import 'package:pemrograman_mobile/screens/register_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -50,7 +52,11 @@ class LoginScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Handle login
+                  // Handle login - navigasi ke HomeScreen
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
@@ -72,6 +78,10 @@ class LoginScreen extends StatelessWidget {
                 TextButton(
                   onPressed: () {
                     // Navigate to register
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => RegisterScreen()),
+                    );
                   },
                   child: Text('Register'),
                 ),
