@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import yang benar
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pemrograman_mobile/screens/login_screen.dart';
+import 'package:pemrograman_mobile/screens/todo_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,22 +12,42 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String username = '';
+  String email = '';
+  String fullName = '';
+  DateTime? joinDate;
+  int totalTransactions = 0;
+  double totalSpending = 0.0;
+  String membershipLevel = 'Basic';
 
   @override
   void initState() {
     super.initState();
-    _loadUsername();
+    _loadUserData();
   }
 
-  Future<void> _loadUsername() async {
+  Future<void> _loadUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
-        username = prefs.getString('username') ?? 'User';
+        username = prefs.getString('username') ?? 'user';
+        email = prefs.getString('email') ?? 'user@example.com';
+        fullName = prefs.getString('full_name') ?? 'User';
+        
+        // Simulasi data untuk demo
+        joinDate = DateTime.now().subtract(const Duration(days: 45));
+        totalTransactions = 15;
+        totalSpending = 1250000.0;
+        membershipLevel = 'Basic';
       });
     } catch (e) {
       setState(() {
-        username = 'User';
+        username = 'user';
+        email = 'user@example.com';
+        fullName = 'User';
+        joinDate = DateTime.now();
+        totalTransactions = 0;
+        totalSpending = 0.0;
+        membershipLevel = 'Basic';
       });
     }
   }
@@ -53,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (shouldLogout == true) {
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.clear(); // Clear all stored data
+        await prefs.clear();
         
         if (mounted) {
           Navigator.pushAndRemoveUntil(
@@ -76,50 +97,250 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Informasi Profil'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: const Row(
           children: [
-            _buildProfileItem('Username', username),
-            _buildProfileItem('Status', 'Aktif'),
-            _buildProfileItem('Login Terakhir', 'Hari ini'),
+            Icon(Icons.person, color: Colors.blue, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Informasi Profil',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
           ],
         ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Photo Profil dan Info Dasar
+              _buildProfileHeader(),
+              const SizedBox(height: 16),
+              
+              // Informasi Akun
+              _buildSectionTitle('Informasi Akun'),
+              _buildProfileItemWithIcon(
+                Icons.person_outline,
+                'Nama Pengguna',
+                username,
+              ),
+              _buildProfileItemWithIcon(
+                Icons.email_outlined,
+                'Email',
+                email,
+              ),
+              _buildProfileItemWithIcon(
+                Icons.badge_outlined,
+                'Nama Lengkap',
+                fullName,
+              ),
+              
+              const SizedBox(height: 8),
+              _buildSectionTitle('Status & Keanggotaan'),
+              _buildProfileItemWithIcon(
+                Icons.verified_user_outlined,
+                'Status Akun',
+                'Aktif',
+                valueColor: Colors.green,
+              ),
+              _buildProfileItemWithIcon(
+                Icons.workspace_premium_outlined,
+                'Tingkat Keanggotaan',
+                membershipLevel,
+                valueColor: Colors.amber[700],
+              ),
+              _buildProfileItemWithIcon(
+                Icons.calendar_today_outlined,
+                'Tanggal Bergabung',
+                _formatDate(joinDate),
+              ),
+              
+              const SizedBox(height: 8),
+              _buildSectionTitle('Statistik Belanja'),
+              _buildProfileItemWithIcon(
+                Icons.receipt_long_outlined,
+                'Total Transaksi',
+                '$totalTransactions transaksi',
+              ),
+              _buildProfileItemWithIcon(
+                Icons.attach_money_outlined,
+                'Total Pengeluaran',
+                _formatCurrency(totalSpending),
+                valueColor: Colors.red,
+              ),
+              _buildProfileItemWithIcon(
+                Icons.trending_up_outlined,
+                'Rata-rata Harian',
+                _formatCurrency(totalSpending / 30),
+              ),
+            ],
+          ),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Tutup'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    // TODO: Implement edit profile
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Fitur edit profil akan segera hadir!'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: const Text('Edit Profil'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProfileItem(String label, String value) {
+  Widget _buildProfileHeader() {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.bottomRight,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Colors.blue.shade100,
+              child: username.isNotEmpty
+                  ? Text(
+                      username[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    )
+                  : const Icon(Icons.person, size: 40, color: Colors.blue),
+            ),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          fullName,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          '@$username',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
+      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.blue[700],
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  // PERBAIKAN: Ganti parameter Color dengan dynamic
+  Widget _buildProfileItemWithIcon(IconData icon, String label, String value, {dynamic valueColor}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-              fontSize: 14,
+          Icon(
+            icon,
+            size: 20,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: valueColor is MaterialColor ? valueColor : (valueColor ?? Colors.black87),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 14),
-            ),
-          const SizedBox(height: 6),
-          const Divider(height: 1,),
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '-';
+    final months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatCurrency(double amount) {
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        )}';
   }
 
   void _showComingSoon(String feature) {
@@ -185,6 +406,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontSize: 12,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      membershipLevel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -196,6 +433,22 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               onTap: () {
                 Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_cart, size: 20),
+              title: const Text(
+                'Daftar Belanja',
+                style: TextStyle(fontSize: 14),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TodoListScreen(username: username), // Kirim username
+                  ),
+                );
               },
             ),
             ListTile(
@@ -237,7 +490,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header yang lebih kecil
             const Text(
               'Dashboard',
               style: TextStyle(
@@ -255,7 +507,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -267,11 +518,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildDashboardCard('Profil', Icons.person, Colors.green, () {
                     _showProfileDialog();
                   }),
-                  _buildDashboardCard('Pesan', Icons.message, Colors.orange, () {
-                    _showComingSoon('Pesan');
+                  _buildDashboardCard('Daftar Belanja', Icons.shopping_cart, Colors.orange, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TodoListScreen(username: username), // Kirim username
+                      ),
+                    );
                   }),
-                  _buildDashboardCard('Pengaturan', Icons.settings, Colors.purple, () {
-                    _showComingSoon('Pengaturan');
+                  _buildDashboardCard('Statistik', Icons.analytics_outlined, Colors.purple, () {
+                    _showComingSoon('Statistik');
                   }),
                   _buildDashboardCard('Bantuan', Icons.help, Colors.red, () {
                     _showComingSoon('Bantuan');
@@ -285,7 +541,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDashboardCard(String title, IconData icon, color, VoidCallback onTap) {
+  Widget _buildDashboardCard(String title, IconData icon, MaterialColor color, VoidCallback onTap) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -302,10 +558,10 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.shade50,
                   shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size:28, color: color),
+                ),
+                child: Icon(icon, size: 28, color: color),
               ),
               const SizedBox(height: 8),
               Text(
@@ -315,7 +571,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 1, 
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],

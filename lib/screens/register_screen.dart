@@ -39,10 +39,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Simulate API call
       await Future.delayed(const Duration(seconds: 1));
 
-      // Save registration state
+      // Simpan data user lengkap
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('username', _usernameController.text);
+      await prefs.setString('username', _usernameController.text.trim());
+      await prefs.setString('email', _emailController.text.trim());
+      await prefs.setString('full_name', _fullNameController.text.trim());
 
       if (mounted) {
         Navigator.pushAndRemoveUntil(

@@ -58,10 +58,13 @@ class _LoginScreenState extends State<LoginScreen> {
       // Simulate API call
       await Future.delayed(const Duration(seconds: 1));
 
-      // Save login state
+      // Load data user lengkap
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('username', _usernameController.text);
+      await prefs.setString('username', _usernameController.text.trim());
+      // Untuk demo, kita set email dan full name default
+      await prefs.setString('email', '${_usernameController.text.trim()}@example.com');
+      await prefs.setString('full_name', 'User ${_usernameController.text.trim()}');
 
       if (mounted) {
         Navigator.pushAndRemoveUntil(

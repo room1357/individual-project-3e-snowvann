@@ -3,11 +3,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pemrograman_mobile/screens/home_screen.dart';
 import 'package:pemrograman_mobile/screens/login_screen.dart';
 import 'package:pemrograman_mobile/screens/register_screen.dart';
+import 'package:pemrograman_mobile/screens/todo_list_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Tambah error handling
   try {
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
@@ -26,16 +26,37 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My App',
+      title: 'Shopping List App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        useMaterial3: true,
       ),
       home: isLoggedIn ? const HomeScreen() : const LoginScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
+        // Route untuk todo_list_screen tidak bisa didefinisikan di sini 
+        // karena membutuhkan parameter username
       },
+      // Handle route yang tidak terdaftar
+      onGenerateRoute: (settings) {
+        // Jika ingin menangani route dinamis di masa depan
+        return null;
+      },
+      // Handle error route
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: const Center(
+              child: Text('Halaman tidak ditemukan'),
+            ),
+          ),
+        );
+      },
+      debugShowCheckedModeBanner: false,
     );
   }
 }
