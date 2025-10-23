@@ -28,7 +28,7 @@ class PermissionService {
   }
 
   // Open app settings
-  static Future<bool> openAppSettings() async {
+  static Future<bool> openSettings() async {
     return await openAppSettings();
   }
 

@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pemrograman_mobile/screens/login_screen.dart';
 import 'package:pemrograman_mobile/screens/todo_list_screen.dart';
+import 'package:pemrograman_mobile/services/shopping_service.dart';
+import 'package:pemrograman_mobile/screens/posts_home_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String locationPermissionStatus = 'Mengecek...';
   bool isLoading = true;
 
+  // Shopping Service
+  final ShoppingService _shoppingService = ShoppingService();
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initializeData() async {
     await _loadUserData();
+    await _loadStatistics();
     await _checkPermissions();
     setState(() {
       isLoading = false;
@@ -54,6 +60,21 @@ class _HomeScreenState extends State<HomeScreen> {
         email = 'user@example.com';
         fullName = 'User';
         joinDate = DateTime.now();
+      });
+    }
+  }
+
+  Future<void> _loadStatistics() async {
+    try {
+      final statistics = await _shoppingService.loadStatistics(username);
+      setState(() {
+        totalTransactions = statistics['totalTransactions'] ?? 0;
+        totalSpending = statistics['totalSpending'] ?? 0.0;
+      });
+    } catch (e) {
+      setState(() {
+        totalTransactions = 0;
+        totalSpending = 0.0;
       });
     }
   }
@@ -187,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
+        builder: (context, setDialogState) {
           return AlertDialog(
             title: const Row(
               children: [
@@ -226,17 +247,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   const SizedBox(height: 8),
                   _buildSectionTitle('Izin Aplikasi'),
-                  _buildPermissionItem(
+                  _buildPermissionItemDialog(
                     'Kamera',
                     cameraPermissionStatus,
                     Icons.camera_alt,
-                    _requestCameraPermission,
+                    () async {
+                      Navigator.pop(context);
+                      await _requestCameraPermission();
+                    },
+                    setDialogState,
                   ),
-                  _buildPermissionItem(
+                  _buildPermissionItemDialog(
                     'Lokasi', 
                     locationPermissionStatus,
                     Icons.location_on,
-                    _requestLocationPermission,
+                    () async {
+                      Navigator.pop(context);
+                      await _requestLocationPermission();
+                    },
+                    setDialogState,
                   ),
                   
                   const SizedBox(height: 8),
@@ -260,6 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
+                        Navigator.pop(context);
                         _showEditProfileDialog();
                       },
                       child: const Text('Edit Profil'),
@@ -277,24 +307,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildProfileHeader() {
     return Column(
       children: [
-        Stack(
-          alignment: Alignment.bottomRight,
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: Colors.blue.shade100,
-              child: username.isNotEmpty
-                  ? Text(
-                      username[0].toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    )
-                  : const Icon(Icons.person, size: 40, color: Colors.blue),
-            ),
-          ],
+        CircleAvatar(
+          radius: 40,
+          backgroundColor: Colors.blue.shade100,
+          child: username.isNotEmpty
+              ? Text(
+                  username[0].toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                )
+              : const Icon(Icons.person, size: 40, color: Colors.blue),
         ),
         const SizedBox(height: 12),
         Text(
@@ -332,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProfileItem(String label, String value, IconData icon, {MaterialColor? valueColor}) {
+  Widget _buildProfileItem(String label, String value, IconData icon, {Color? valueColor}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -369,10 +394,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPermissionItem(String title, String status, IconData icon, VoidCallback onRequest) {
-    MaterialColor statusColor = Colors.green;
-    if (status.contains('Ditolak')) statusColor = Colors.red;
-    if (status.contains('Mengecek')) statusColor = Colors.orange;
+  Widget _buildPermissionItemDialog(
+    String title, 
+    String status, 
+    IconData icon, 
+    VoidCallback onRequest,
+    StateSetter setDialogState,
+  ) {
+    final Color statusColor = status.contains('Ditolak') 
+        ? Colors.red 
+        : status.contains('Mengecek') 
+            ? Colors.orange 
+            : Colors.green;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -507,8 +540,7 @@ class _HomeScreenState extends State<HomeScreen> {
     String description, 
     VoidCallback onRequest
   ) {
-    MaterialColor statusColor = Colors.green;
-    if (status.contains('Ditolak')) statusColor = Colors.red;
+    final Color statusColor = status.contains('Ditolak') ? Colors.red : Colors.green;
     
     return Card(
       elevation: 2,
@@ -659,7 +691,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '@${username.toLowerCase()}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
                   ),
@@ -706,6 +738,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(
                   builder: (context) => TodoListScreen(username: username),
                 ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.article, size: 20),
+            title: const Text(
+              'Posts API Demo',
+              style: TextStyle(fontSize: 14),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PostsHomeScreen()),
               );
             },
           ),
@@ -806,16 +852,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 ),
                 _buildDashboardCard(
-                  'Kelola Izin', 
-                  Icons.security, 
+                  'Posts API', 
+                  Icons.article, 
                   Colors.purple, 
-                  _showPermissionsManagement
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PostsHomeScreen()),
+                    );
+                  }
                 ),
                 _buildDashboardCard(
-                  'Statistik', 
-                  Icons.analytics_outlined, 
-                  Colors.red, 
-                  () => _showComingSoon('Statistik')
+                  'Kelola Izin', 
+                  Icons.security, 
+                  Colors.blue, 
+                  _showPermissionsManagement
                 ),
               ],
             ),
@@ -825,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDashboardCard(String title, IconData icon, MaterialColor color, VoidCallback onTap) {
+  Widget _buildDashboardCard(String title, IconData icon, Color color, VoidCallback onTap) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -842,7 +893,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.shade50,
+                  color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 32, color: color),
