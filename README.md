@@ -1,4 +1,4 @@
-<img width="624" height="917" alt="image" src="https://github.com/user-attachments/assets/5a671853-7e41-4735-8a00-f5d13e565049" />Expense Manager App
+Expense Manager App
 
 Aplikasi pengelolaan pengeluaran sederhana berbasis Flutter.
 
