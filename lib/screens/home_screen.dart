@@ -4,7 +4,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:pemrograman_mobile/screens/login_screen.dart';
 import 'package:pemrograman_mobile/screens/todo_list_screen.dart';
 import 'package:pemrograman_mobile/services/shopping_service.dart';
-import 'package:pemrograman_mobile/screens/posts_home_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,12 +21,10 @@ class _HomeScreenState extends State<HomeScreen> {
   double totalSpending = 0.0;
   String membershipLevel = 'Basic';
   
-  // Permission status
   String cameraPermissionStatus = 'Mengecek...';
   String locationPermissionStatus = 'Mengecek...';
   bool isLoading = true;
 
-  // Shopping Service
   final ShoppingService _shoppingService = ShoppingService();
 
   @override
@@ -40,55 +37,69 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadUserData();
     await _loadStatistics();
     await _checkPermissions();
-    setState(() {
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        username = prefs.getString('username') ?? 'user';
-        email = prefs.getString('email') ?? 'user@example.com';
-        fullName = prefs.getString('full_name') ?? 'User';
-        joinDate = DateTime.now().subtract(const Duration(days: 45));
-      });
+      if (mounted) {
+        setState(() {
+          username = prefs.getString('username') ?? 'user';
+          email = prefs.getString('email') ?? 'user@example.com';
+          fullName = prefs.getString('full_name') ?? 'User';
+          joinDate = DateTime.now().subtract(const Duration(days: 45));
+        });
+      }
     } catch (e) {
-      setState(() {
-        username = 'user';
-        email = 'user@example.com';
-        fullName = 'User';
-        joinDate = DateTime.now();
-      });
+      if (mounted) {
+        setState(() {
+          username = 'user';
+          email = 'user@example.com';
+          fullName = 'User';
+          joinDate = DateTime.now();
+        });
+      }
     }
   }
 
   Future<void> _loadStatistics() async {
     try {
       final statistics = await _shoppingService.loadStatistics(username);
-      setState(() {
-        totalTransactions = statistics['totalTransactions'] ?? 0;
-        totalSpending = statistics['totalSpending'] ?? 0.0;
-      });
+      if (mounted) {
+        setState(() {
+          totalTransactions = statistics['totalTransactions'] ?? 0;
+          totalSpending = statistics['totalSpending'] ?? 0.0;
+        });
+      }
     } catch (e) {
-      setState(() {
-        totalTransactions = 0;
-        totalSpending = 0.0;
-      });
+      if (mounted) {
+        setState(() {
+          totalTransactions = 0;
+          totalSpending = 0.0;
+        });
+      }
     }
   }
 
   Future<void> _checkPermissions() async {
     final cameraStatus = await Permission.camera.status;
-    setState(() {
-      cameraPermissionStatus = _getStatusText(cameraStatus);
-    });
+    if (mounted) {
+      setState(() {
+        cameraPermissionStatus = _getStatusText(cameraStatus);
+      });
+    }
 
     final locationStatus = await Permission.location.status;
-    setState(() {
-      locationPermissionStatus = _getStatusText(locationStatus);
-    });
+    if (mounted) {
+      setState(() {
+        locationPermissionStatus = _getStatusText(locationStatus);
+      });
+    }
   }
 
   String _getStatusText(PermissionStatus status) {
@@ -104,15 +115,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final status = await Permission.camera.request();
     await _checkPermissions();
     
-    if (status.isGranted) {
-      _showSnackBar('Izin kamera diberikan!');
-    } else if (status.isPermanentlyDenied) {
-      _showPermissionDeniedDialog(
-        'Izin Kamera',
-        'Aplikasi membutuhkan akses kamera untuk mengambil foto profil. Silakan aktifkan izin kamera di pengaturan.',
-      );
-    } else {
-      _showSnackBar('Izin kamera ditolak');
+    if (mounted) {
+      if (status.isGranted) {
+        _showSnackBar('Izin kamera diberikan!', Colors.green);
+      } else if (status.isPermanentlyDenied) {
+        _showPermissionDeniedDialog(
+          'Izin Kamera',
+          'Aplikasi membutuhkan akses kamera untuk mengambil foto profil. Silakan aktifkan izin kamera di pengaturan.',
+        );
+      } else {
+        _showSnackBar('Izin kamera ditolak', Colors.red);
+      }
     }
   }
 
@@ -120,15 +133,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final status = await Permission.location.request();
     await _checkPermissions();
     
-    if (status.isGranted) {
-      _showSnackBar('Izin lokasi diberikan!');
-    } else if (status.isPermanentlyDenied) {
-      _showPermissionDeniedDialog(
-        'Izin Lokasi',
-        'Aplikasi membutuhkan akses lokasi untuk menampilkan toko terdekat. Silakan aktifkan izin lokasi di pengaturan.',
-      );
-    } else {
-      _showSnackBar('Izin lokasi ditolak');
+    if (mounted) {
+      if (status.isGranted) {
+        _showSnackBar('Izin lokasi diberikan!', Colors.green);
+      } else if (status.isPermanentlyDenied) {
+        _showPermissionDeniedDialog(
+          'Izin Lokasi',
+          'Aplikasi membutuhkan akses lokasi untuk menampilkan toko terdekat. Silakan aktifkan izin lokasi di pengaturan.',
+        );
+      } else {
+        _showSnackBar('Izin lokasi ditolak', Colors.red);
+      }
     }
   }
 
@@ -136,6 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text('$title Ditolak'),
         content: Text(message),
         actions: [
@@ -148,10 +164,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showSnackBar(String message) {
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -161,22 +181,27 @@ class _HomeScreenState extends State<HomeScreen> {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Konfirmasi Logout'),
         content: const Text('Apakah Anda yakin ingin logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Logout'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
 
-    if (shouldLogout == true) {
+    if (shouldLogout == true && mounted) {
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.clear();
@@ -190,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       } catch (e) {
         if (mounted) {
-          _showSnackBar('Logout gagal. Coba lagi.');
+          _showSnackBar('Logout gagal. Coba lagi.', Colors.red);
         }
       }
     }
@@ -199,244 +224,224 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showProfileDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.person, color: Colors.blue, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'Informasi Profil',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.9,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Photo Profil
-              _buildProfileHeader(),
-              const SizedBox(height: 24),
-              
-              // Grid Layout 2x2
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Kolom Kiri
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle('Informasi Akun'),
-                        _buildCompactProfileItem('Username', username, Icons.person_outline),
-                        _buildCompactProfileItem('Email', email, Icons.email_outlined),
-                        _buildCompactProfileItem('Nama', fullName, Icons.badge_outlined),
-                        
-                        const SizedBox(height: 16),
-                        
-                        _buildSectionTitle('Izin Aplikasi'),
-                        _buildCompactPermissionItem('Kamera', cameraPermissionStatus, Icons.camera_alt),
-                        _buildCompactPermissionItem('Lokasi', locationPermissionStatus, Icons.location_on),
-                      ],
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.person_outline, color: Colors.deepPurple, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Profil Saya',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  // Kolom Kanan
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle('Status Keanggotaan'),
-                        _buildCompactProfileItem('Status', 'Aktif', Icons.verified_user_outlined, valueColor: Colors.green),
-                        _buildCompactProfileItem('Level', membershipLevel, Icons.workspace_premium_outlined, valueColor: Colors.amber),
-                        _buildCompactProfileItem('Bergabung', _formatDateShort(joinDate), Icons.calendar_today_outlined),
-                        
-                        const SizedBox(height: 16),
-                        
-                        _buildSectionTitle('Statistik Belanja'),
-                        _buildCompactProfileItem('Transaksi', '$totalTransactions', Icons.receipt_long_outlined),
-                        _buildCompactProfileItem('Pengeluaran', _formatCurrencyShort(totalSpending), Icons.attach_money_outlined, valueColor: Colors.red),
-                      ],
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, size: 24),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey[100],
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              
+              _buildProfileHeader(),
+              const SizedBox(height: 24),
+              
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildProfileSection(
+                        'Informasi Akun',
+                        Icons.account_circle_outlined,
+                        [
+                          _buildInfoRow('Username', username, Icons.person_outline),
+                          _buildInfoRow('Email', email, Icons.email_outlined),
+                          _buildInfoRow('Nama Lengkap', fullName, Icons.badge_outlined),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildProfileSection(
+                        'Status',
+                        Icons.workspace_premium_outlined,
+                        [
+                          _buildInfoRow('Keanggotaan', membershipLevel, Icons.stars, color: Colors.amber),
+                          _buildInfoRow('Bergabung', _formatDateShort(joinDate), Icons.calendar_today_outlined),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildProfileSection(
+                        'Statistik Belanja',
+                        Icons.shopping_bag_outlined,
+                        [
+                          _buildInfoRow('Total Transaksi', '$totalTransactions', Icons.receipt_long_outlined),
+                          _buildInfoRow('Total Pengeluaran', _formatCurrencyShort(totalSpending), Icons.attach_money_outlined, color: Colors.green),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[900],
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Tutup', style: TextStyle(fontSize: 16, color: Colors.white)),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showEditProfileDialog();
-            },
-            child: const Text('Edit Profil'),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildProfileHeader() {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 35,
-          backgroundColor: Colors.blue.shade100,
-          child: username.isNotEmpty
-              ? Text(
-                  username[0].toUpperCase(),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.deepPurple.shade50, Colors.blue.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Colors.deepPurple, Colors.blue],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                username.isNotEmpty ? username[0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fullName,
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
                   ),
-                )
-              : const Icon(Icons.person, size: 35, color: Colors.blue),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          fullName,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '@$username',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
           ),
-          textAlign: TextAlign.center,
-        ),
-        Text(
-          '@$username',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Colors.blue[700],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildCompactProfileItem(String label, String value, IconData icon, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
+  Widget _buildProfileSection(String title, IconData icon, List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: Colors.grey[600]),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[600],
-                  ),
+          Row(
+            children: [
+              Icon(icon, size: 20, color: Colors.grey[900]),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[900],
                 ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: valueColor ?? Colors.black87,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 12),
+          ...children,
         ],
       ),
     );
   }
 
-  Widget _buildCompactPermissionItem(String title, String status, IconData icon) {
-    final Color statusColor = status.contains('Ditolak') 
-        ? Colors.red 
-        : status.contains('Mengecek') 
-            ? Colors.orange 
-            : Colors.green;
-
+  Widget _buildInfoRow(String label, String value, IconData icon, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey[600]),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: Colors.grey[400]),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                  ),
-                ),
-              ],
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[600],
+              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditProfileDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profil'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Fitur edit profil akan segera hadir!'),
-            const SizedBox(height: 16),
-            Icon(Icons.construction, size: 40, color: Colors.orange.shade400),
-            const SizedBox(height: 8),
-            const Text(
-              'Fitur dalam pengembangan',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: color ?? Colors.grey[900],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
           ),
         ],
       ),
@@ -446,39 +451,49 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showStatisticsDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.bar_chart, color: Colors.blue, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'Statistik Belanja',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 300,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.bar_chart_rounded, color: Colors.green, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Statistik Belanja',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
               _buildStatCard(
                 'Total Transaksi',
                 '$totalTransactions',
                 'transaksi selesai',
-                Icons.receipt_long,
-                Colors.blue,
+                Icons.receipt_long_rounded,
+                Colors.deepPurple,
               ),
               const SizedBox(height: 12),
               _buildStatCard(
                 'Total Pengeluaran',
                 _formatCurrency(totalSpending),
                 'dari item yang dibeli',
-                Icons.attach_money,
+                Icons.account_balance_wallet_rounded,
                 Colors.green,
               ),
               const SizedBox(height: 12),
@@ -486,39 +501,58 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Rata-rata Harian',
                 _formatCurrency(totalSpending / 30),
                 'estimasi per hari',
-                Icons.trending_up,
-                Colors.orange,
+                Icons.trending_up_rounded,
+                Colors.amber,
               ),
               const SizedBox(height: 12),
               _buildStatCard(
-                'Rata-rata per Transaksi',
+                'Rata-rata Transaksi',
                 _formatCurrency(totalTransactions > 0 ? totalSpending / totalTransactions : 0),
                 'per item',
-                Icons.shopping_basket,
-                Colors.purple,
+                Icons.shopping_basket_rounded,
+                Colors.blue,
+              ),
+              
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Tutup'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TodoListScreen(username: username),
+                          ),
+                        );
+                        await _loadStatistics();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Lihat Belanja', style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TodoListScreen(username: username),
-                ),
-              );
-              await _loadStatistics();
-            },
-            child: const Text('Lihat Belanja'),
-          ),
-        ],
       ),
     );
   }
@@ -527,21 +561,21 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Colors.white, size: 24),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,7 +584,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   title,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[700],
+                    color: Colors.grey[600],
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -566,8 +600,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[600],
+                    fontSize: 11,
+                    color: Colors.grey[500],
                   ),
                 ),
               ],
@@ -579,57 +613,78 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Fitur $feature akan segera hadir!'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    _showSnackBar('Fitur $feature akan segera hadir!', Colors.blue);
   }
 
   void _showPermissionsManagement() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.security, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Kelola Izin Aplikasi'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildPermissionManagementCard(
-              'Kamera',
-              cameraPermissionStatus,
-              Icons.camera_alt,
-              'Untuk mengambil foto profil',
-              _requestCameraPermission,
-            ),
-            const SizedBox(height: 12),
-            _buildPermissionManagementCard(
-              'Lokasi',
-              locationPermissionStatus,
-              Icons.location_on,
-              'Untuk menampilkan toko terdekat',
-              _requestLocationPermission,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.security_rounded, color: Colors.amber, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Kelola Izin Aplikasi',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              _buildPermissionCard(
+                'Kamera',
+                cameraPermissionStatus,
+                Icons.camera_alt_rounded,
+                'Untuk mengambil foto profil',
+                _requestCameraPermission,
+              ),
+              const SizedBox(height: 12),
+              _buildPermissionCard(
+                'Lokasi',
+                locationPermissionStatus,
+                Icons.location_on_rounded,
+                'Untuk menampilkan toko terdekat',
+                _requestLocationPermission,
+              ),
+              
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: BorderSide(color: Colors.grey[300]!),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Tutup'),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildPermissionManagementCard(
+  Widget _buildPermissionCard(
     String title, 
     String status, 
     IconData icon, 
@@ -637,80 +692,93 @@ class _HomeScreenState extends State<HomeScreen> {
     VoidCallback onRequest
   ) {
     final Color statusColor = status.contains('Ditolak') ? Colors.red : Colors.green;
+    final bool isGranted = status.contains('Diizinkan');
     
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 28, color: Colors.blue),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Status: $status',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: statusColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
+                child: Icon(icon, size: 24, color: statusColor),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          status,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: statusColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
             ),
+          ),
+          if (!isGranted) ...[
             const SizedBox(height: 12),
-            if (!status.contains('Diizinkan'))
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: onRequest,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text(
-                    'Minta Izin',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onRequest,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
+                child: const Text('Minta Izin', style: TextStyle(color: Colors.white)),
               ),
+            ),
           ],
-        ),
+        ],
       ),
     );
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '-';
-    final months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   String _formatDateShort(DateTime? date) {
@@ -737,34 +805,40 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
+      return Scaffold(
+        backgroundColor: Colors.grey[50],
         body: Center(
-          child: CircularProgressIndicator(),
+          child: CircularProgressIndicator(color: Colors.deepPurple),
         ),
       );
     }
 
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: Text(
           'Beranda', 
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[900],
           ),
         ),
-        backgroundColor: Colors.blue,
+        iconTheme: IconThemeData(color: Colors.grey[900]),
         actions: [
           IconButton(
             onPressed: _showPermissionsManagement,
-            icon: const Icon(Icons.security, size: 22),
+            icon: Icon(Icons.security_rounded, color: Colors.grey[900]),
             tooltip: 'Kelola Izin',
           ),
           IconButton(
             onPressed: _handleLogout,
-            icon: const Icon(Icons.logout, size: 22),
+            icon: Icon(Icons.logout_rounded, color: Colors.red),
             tooltip: 'Logout',
           ),
+          const SizedBox(width: 8),
         ],
       ),
       drawer: _buildDrawer(),
@@ -774,74 +848,82 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDrawer() {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: Colors.blue,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const CircleAvatar(
-                  radius: 25,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 30, color: Colors.blue),
+      child: Container(
+        color: Colors.white,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.deepPurple, Colors.blue],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Halo, $username!',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '@${username.toLowerCase()}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    membershipLevel,
-                    style: const TextStyle(
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: const BoxDecoration(
                       color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        username.isNotEmpty ? username[0].toUpperCase() : 'U',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Text(
+                    'Halo, $username!',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '@${username.toLowerCase()}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      membershipLevel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home, size: 20),
-            title: const Text(
-              'Beranda',
-              style: TextStyle(fontSize: 14),
-            ),
-            onTap: () {
+            const SizedBox(height: 8),
+            _buildDrawerItem(Icons.home_rounded, 'Beranda', () {
               Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.shopping_cart, size: 20),
-            title: const Text(
-              'Daftar Belanja',
-              style: TextStyle(fontSize: 14),
-            ),
-            onTap: () async {
+            }),
+            _buildDrawerItem(Icons.shopping_cart_rounded, 'Daftar Belanja', () async {
               Navigator.pop(context);
               await Navigator.push(
                 context,
@@ -850,120 +932,216 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
               await _loadStatistics();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.article, size: 20),
-            title: const Text(
-              'Posts API Demo',
-              style: TextStyle(fontSize: 14),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PostsHomeScreen()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person, size: 20),
-            title: const Text(
-              'Profil Saya',
-              style: TextStyle(fontSize: 14),
-            ),
-            onTap: () {
+            }),
+            _buildDrawerItem(Icons.person_rounded, 'Profil Saya', () {
               Navigator.pop(context);
               _showProfileDialog();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.bar_chart, size: 20),
-            title: const Text(
-              'Statistik Belanja',
-              style: TextStyle(fontSize: 14),
-            ),
-            onTap: () {
+            }),
+            _buildDrawerItem(Icons.bar_chart_rounded, 'Statistik Belanja', () {
               Navigator.pop(context);
               _showStatisticsDialog();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.security, size: 20),
-            title: const Text(
-              'Kelola Izin',
-              style: TextStyle(fontSize: 14),
-            ),
-            onTap: () {
+            }),
+            _buildDrawerItem(Icons.security_rounded, 'Kelola Izin', () {
               Navigator.pop(context);
               _showPermissionsManagement();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings, size: 20),
-            title: const Text(
-              'Pengaturan',
-              style: TextStyle(fontSize: 14),
-            ),
-            onTap: () {
+            }),
+            _buildDrawerItem(Icons.settings_rounded, 'Pengaturan', () {
               Navigator.pop(context);
               _showComingSoon('Pengaturan');
-            },
-          ),
-          const Divider(height: 20),
-          ListTile(
-            leading: const Icon(Icons.logout, size: 20),
-            title: const Text(
-              'Logout',
-              style: TextStyle(fontSize: 14),
+            }),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Divider(),
             ),
-            onTap: _handleLogout,
-          ),
-        ],
+            _buildDrawerItem(Icons.logout_rounded, 'Logout', _handleLogout, color: Colors.red),
+          ],
+        ),
       ),
     );
   }
 
+  Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap, {Color? color}) {
+    return ListTile(
+      leading: Icon(icon, size: 22, color: color ?? Colors.grey[900]),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: color ?? Colors.grey[900],
+        ),
+      ),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+    );
+  }
+
   Widget _buildBody() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Dashboard',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Dashboard',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[900],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Halo, $username! Selamat datang kembali.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
+            const SizedBox(height: 8),
+            Text(
+              'Halo, $username! Selamat datang kembali 👋',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[600],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: GridView.count(
+            const SizedBox(height: 24),
+            
+            // Statistics Summary Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.deepPurple, Colors.blue],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.deepPurple.shade200,
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Statistik Belanja',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.trending_up_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Total Transaksi',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$totalTransactions',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 40,
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Total Belanja',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatCurrencyShort(totalSpending),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            Text(
+              'Menu Cepat',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[900],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Grid Menu
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.0,
+              childAspectRatio: 1.1,
               children: [
-                _buildDashboardCard(
-                  'Profil Saya', 
-                  Icons.person, 
-                  Colors.green, 
-                  () => _showProfileDialog()
+                _buildMenuCard(
+                  'Profil Saya',
+                  Icons.person_rounded,
+                  Colors.deepPurple,
+                  () => _showProfileDialog(),
                 ),
-                _buildDashboardCard(
-                  'Daftar Belanja', 
-                  Icons.shopping_cart, 
-                  Colors.orange, 
+                _buildMenuCard(
+                  'Daftar Belanja',
+                  Icons.shopping_cart_rounded,
+                  Colors.green,
                   () async {
                     await Navigator.push(
                       context,
@@ -972,157 +1150,68 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                     await _loadStatistics();
-                  }
+                  },
                 ),
-                _buildDashboardCard(
-                  'Posts API', 
-                  Icons.article, 
-                  Colors.purple, 
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const PostsHomeScreen()),
-                    );
-                  }
+                _buildMenuCard(
+                  'Kelola Izin',
+                  Icons.security_rounded,
+                  Colors.amber,
+                  _showPermissionsManagement,
                 ),
-                _buildDashboardCard(
-                  'Kelola Izin', 
-                  Icons.security, 
-                  Colors.blue, 
-                  _showPermissionsManagement
-                ),
-                _buildDashboardCardWithStats(
-                  'Statistik', 
-                  Icons.bar_chart, 
-                  Colors.teal,
-                  '$totalTransactions transaksi',
-                  _formatCurrencyShort(totalSpending),
-                  _showStatisticsDialog
-                ),
-                _buildDashboardCard(
-                  'Pengaturan', 
-                  Icons.settings, 
-                  Colors.grey, 
-                  () => _showComingSoon('Pengaturan')
+                _buildMenuCard(
+                  'Pengaturan',
+                  Icons.settings_rounded,
+                  Colors.grey,
+                  () => _showComingSoon('Pengaturan'),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDashboardCard(String title, IconData icon, Color color, VoidCallback onTap) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 32, color: color),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDashboardCardWithStats(
-    String title, 
-    IconData icon, 
-    Color color, 
-    String stat1,
-    String stat2,
-    VoidCallback onTap
-  ) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 32, color: color),
+  Widget _buildMenuCard(String title, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
+              child: Icon(icon, size: 32, color: color),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[900],
               ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      stat1,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    Text(
-                      stat2,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: color.withOpacity(0.8),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );
