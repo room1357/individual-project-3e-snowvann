@@ -39,9 +39,3 @@ Tampilan daftar pengeluaran:
 <img width="624" height="917" alt="image" src="https://github.com/user-attachments/assets/7a310035-6e5f-47b2-85ce-d6703872e06c" />
 <img width="602" height="170" alt="image" src="https://github.com/user-attachments/assets/54f64fcc-a967-4098-9635-0906e8135ce2" />
 
-
-## 📦 Instalasi
-```bash
-git clone https://github.com/username/expense-manager.git
-cd expense-manager
-flutter run
